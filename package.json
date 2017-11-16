@@ -1,5 +1,5 @@
 {
-  "name": "wahl-server",
+  "name": "wahl-be",
   "version": "1.0.0",
   "babel": {
     "presets": [
