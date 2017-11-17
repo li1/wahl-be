@@ -44,6 +44,11 @@ app.get("/parteiergebnisse", async (req, res) => {
   .then(r => mergeMapsByValueOfKey("wahlkreis", r))
 
   res.send(results);
+});
+
+app.get("/sitzverteilung", async (req, res) => {
+    const { rows } = await dbConnector.query("select parteiid as partei, sitze from SitzverteilungBundestagParteien")
+    res.send(rows)
 })
 
 app.listen(3000, () => {
