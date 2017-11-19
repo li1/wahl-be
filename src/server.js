@@ -46,8 +46,11 @@ app.get("/parteiergebnisse", async (req, res) => {
   res.send(results);
 });
 
+const sitzverteilung = "select p.name as partei, sitze from SitzverteilungBundestagParteien sbp, parteien p " +
+  "where legislaturperiodeid = '2017' and p.id = sbp.parteiid";
+
 app.get("/sitzverteilung", async (req, res) => {
-    const { rows } = await dbConnector.query("select parteiid as partei, sitze from SitzverteilungBundestagParteien")
+    const { rows } = await dbConnector.query(sitzverteilung)
     res.send(rows)
 })
 
