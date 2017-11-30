@@ -6,6 +6,7 @@ import _ from "lodash";
 
 import express from "express";
 import * as dbConnector from "./dbConnector"
+import * as queries from "./queries";
 
 
 const app = express();
@@ -50,8 +51,13 @@ const sitzverteilung = "select p.name as partei, sitze from SitzverteilungBundes
   "where legislaturperiodeid = '2017' and p.id = sbp.parteiid";
 
 app.get("/sitzverteilung", async (req, res) => {
-    const { rows } = await dbConnector.query(sitzverteilung)
-    res.send(rows)
+  const { rows } = await dbConnector.query(sitzverteilung);
+  res.send(rows);
+})
+
+app.get("/bundestagsmitglieder", async (req, res) => {
+  const { rows } = await dbConnector.query(queries.bundestagsmitglieder);
+  res.send(rows);
 })
 
 app.listen(3000, () => {
