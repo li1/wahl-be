@@ -60,6 +60,11 @@ app.get("/bundestagsmitglieder", async (req, res) => {
   res.send(rows);
 })
 
+app.get("/zweitstimmensieger", async (req, res) => {
+  const { rows } = await dbConnector.query(queries.zweitstimmensieger);
+  res.send(rows);
+})
+
 app.listen(3000, () => {
   console.log("App listening on port 3000!");
 })

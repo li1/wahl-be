@@ -13,3 +13,17 @@ export const bundestagsmitglieder = "with Bundestagsmitglieder (partei, bundesla
     "select partei, b.name as Bundesland, direktkandidat as Direktkandidatur, listenplatz, vorname, nachname, geschlecht, geburtsjahr  " +
     "from bundestagsmitglieder bm, bundeslaender b " +
     "where bm.bundesland = b.id;";
+
+export const zweitstimmensieger =
+['with maxproB (bid, m) as (',
+'select bundeslandid, max(zweitstimmen) from bundeslaendergebnisse',
+'where legislaturperiodeid = 2017 ',
+'group by bundeslandid )',
+'',
+'select bb.name as land, p.name as partei',
+'from maxproB m, bundeslaendergebnisse b, bundeslaender bb, parteien p',
+'where m.m = b.zweitstimmen',
+'and b.bundeslandid = bb.id',
+'and b.parteiid = p.id'].join('\n');
+
+
