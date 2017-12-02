@@ -80,6 +80,27 @@ app.get("/erststimmenFollower", async (req, res) => {
   res.send(rows);
 })
 
+app.get("/wahlkreisuebersicht2017", async (req, res) => {
+  const { rows } = await dbConnector.query(queries.wahlkreisuebersicht(2017));
+  res.send(rows);
+})
+
+app.get("/wahlkreisuebersicht2013", async (req, res) => {
+  const { rows } = await dbConnector.query(queries.wahlkreisuebersicht(2013));
+  res.send(rows);
+})
+
+app.get("/wahlkreisdetails2017/:wahlkreis", async (req, res) => {
+  const { rows } = await dbConnector.query(queries.wahlkreisdetails(2017, req.params.wahlkreis));
+  res.send(rows);
+})
+
+app.get("/wahlkreisdetails2013/:wahlkreis", async (req, res) => {
+  const { rows } = await dbConnector.query(queries.wahlkreisdetails(2013, req.params.wahlkreis));
+  res.send(rows);
+})
+
+
 
 app.listen(3000, () => {
   console.log("App listening on port 3000!");
