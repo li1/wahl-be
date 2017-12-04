@@ -149,19 +149,19 @@ export const wahlkreisdetails = (jahr, wahlkreis) => (
 '           where wahlkreis = \'' + wahlkreis + '\';'].join('\n'));
 
 
-//@TODO
-export const ueberhangsmandate =
-['select ble.legislaturperiodeid, p.name, bl.name, ',
-'    CASE WHEN  ble.Direktmandate < pzm.Mandate THEN 0 ELSE ble.Direktmandate - pzm.Mandate END AS Ueberhangsmandate',
+export const ueberhangmandate = jahr => (
+['select bl.name Bundesland, p.name Partei,',
+'    CASE WHEN  ble.Direktmandate < pzm.Mandate THEN 0 ELSE ble.Direktmandate - pzm.Mandate END AS "Überhangmandate"',
 'from Bundeslaendergebnisse ble, ParteienZweitstimmenmandate pzm, Parteien p, Bundeslaender bl',
 'where ble.legislaturperiodeid = pzm.legislaturperiode and',
 'ble.parteiid = pzm.parteiid and',
 'ble.bundeslandid = pzm.bundeslandid and',
 'p.id = ble.parteiid and',
-'bl.id = ble.bundeslandid'].join('\n');
+'ble.legislaturperiodeid = ' + jahr,
+'and bl.id = ble.bundeslandid'].join('\n'));
 
 //@TODO
-export const knappsteSiegerVerlierer =
+export const knappsteSiegerVerlierer = jahr => (
 ['With ErsterZweiter (legislaturperiodeid, wahlkreisid, kandidatid, anz, anteil, platz) as',
 '(',
 '    select legislaturperiodeid, wahlkreisid, kandidatid, anz, anteil, ROW_Id',
@@ -218,6 +218,9 @@ export const knappsteSiegerVerlierer =
 ')',
 '',
 '',
-'select legislaturperiodeid, wahlkreis, kandidat, partei, abstand, false as gewinner  from knappsteVerlierer_10',
-'union ',
-'select legislaturperiodeid, wahlkreis, kandidat, partei, prozentualerVOrsprung, true as gewinner from GewinnerVorsprung'].join('\n');
+'select wahlkreis, kandidat, partei, abstand as "abstand [in %]", false as gewinner from knappsteVerlierer_10',
+'    where legislaturperiodeid = ' + jahr,
+'union', 
+'select wahlkreis, kandidat, partei, prozentualerVorsprung as "abstand [in %]", true as gewinner from GewinnerVorsprung',
+'    where legislaturperiodeid = ' + jahr].join('\n')
+);
