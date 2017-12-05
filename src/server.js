@@ -18,11 +18,11 @@ app.use(function(req, res, next) {
   next();
 });
 
-app.get("/", async (req, res) => {
-  // const { id } = req.params
-  const { rows } = await dbConnector.query("SELECT * FROM bundeslaender ORDER BY id ASC")
-  res.send(rows)
-} );
+// app.get("/", async (req, res) => {
+//   // const { id } = req.params
+//   const { rows } = await dbConnector.query("SELECT * FROM bundeslaender ORDER BY id ASC")
+//   res.send(rows)
+// } );
 
 // const parteien = ["DIE LINKE", "Sozialdemokratische Partei Deutschlands", "Freie Demokratische Partei"];
 // const parteienIdents = ["Linke", "SPD", "FDP"] //_.map(parteien, partei => partei.split(' ').join(''));
@@ -50,56 +50,55 @@ app.get("/", async (req, res) => {
 const sitzverteilung = "select p.name as partei, sitze from SitzverteilungBundestagParteien sbp, parteien p " +
   "where legislaturperiodeid = '2017' and p.id = sbp.parteiid";
 
+//Q1
 app.get("/sitzverteilung", async (req, res) => {
   const { rows } = await dbConnector.query(sitzverteilung);
   res.send(rows);
 })
 
+//Q2
 app.get("/bundestagsmitglieder", async (req, res) => {
   const { rows } = await dbConnector.query(queries.bundestagsmitglieder);
   res.send(rows);
 })
 
-app.get("/zweitstimmensieger", async (req, res) => {
-  const { rows } = await dbConnector.query(queries.zweitstimmensieger);
-  res.send(rows);
-})
-
-app.get("/zweitstimmenFollower", async (req, res) => {
-  const { rows } = await dbConnector.query(queries.zweitstimmenFollower);
-  res.send(rows);
-})
-
-app.get("/erststimmensieger", async (req, res) => {
-  const { rows } = await dbConnector.query(queries.erststimmensieger);
-  res.send(rows);
-})
-
-app.get("/erststimmenFollower", async (req, res) => {
-  const { rows } = await dbConnector.query(queries.erststimmenFollower);
-  res.send(rows);
-})
-
+//Q3.1, Q3.2, Q4 
 app.get("/wahlkreisuebersicht/:jahr", async (req, res) => {
   const { rows } = await dbConnector.query(queries.wahlkreisuebersicht(req.params.jahr));
   res.send(rows);
 })
 
+//Q3.3, Q3.4 (Wahlkreis optional für Gesamtabfrage)
 app.get("/wahlkreisdetails/:jahr/:wahlkreis", async (req, res) => {
   const { rows } = await dbConnector.query(queries.wahlkreisdetails(req.params.jahr, req.params.wahlkreis));
   res.send(rows);
 })
 
+//Q5
 app.get("/ueberhangmandate/:jahr", async (req, res) => {
   const { rows } = await dbConnector.query(queries.ueberhangmandate(req.params.jahr));
   res.send(rows);
 })
 
-app.get("/knappste/:jahr", async (req, res) => {
-  const { rows } = await dbConnector.query(queries.knappsteSiegerVerlierer(req.params.jahr));
+//Q6
+app.get("/knappste/", async (req, res) => {
+  const { rows } = await dbConnector.query(queries.knappsteSiegerVerlierer);
   res.send(rows);
 })
 
+//eigene Abfrage: Ergebnisunterschiede bei Umgewichtung
+app.get("/umgewichtung/:gewichtung/:typ", async (req, res) => {
+  const { rows } = await dbConnector.query(queries.umgewichtung(req.params.gewichtung, req.params.typ));
+  res.send(rows);
+})
+
+//Add-On: (Zweit)sieger nach Bundesland
+//typ: "erst" || "zweit"
+//platz: "sieger" || "zweiter"
+app.get("/bundeslanderg/:typ/:platz", async (req, res) => {
+  const { rows } = await dbConnector.query(queries.bundeslanderg(req.params.typ, req.params.platz));
+  res.send(rows);
+})
 
 app.listen(3000, () => {
   console.log("App listening on port 3000!");

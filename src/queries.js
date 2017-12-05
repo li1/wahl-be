@@ -14,66 +14,41 @@ export const bundestagsmitglieder = "with Bundestagsmitglieder (partei, bundesla
     "from bundestagsmitglieder bm, bundeslaender b " +
     "where bm.bundesland = b.id;";
 
-export const zweitstimmensieger =
-['with maxproB (bid, m) as (',
-'select bundeslandid, max(zweitstimmen) from bundeslaendergebnisse',
-'where legislaturperiodeid = 2017 ',
-'group by bundeslandid )',
-'',
-'select bb.name as land, p.name as partei',
-'from maxproB m, bundeslaendergebnisse b, bundeslaender bb, parteien p',
-'where m.m = b.zweitstimmen',
-'and b.bundeslandid = bb.id',
-'and b.parteiid = p.id',
-'and m.bid = b.bundeslandid'].join('\n');
 
-export const zweitstimmenFollower =
-['with zweiterproBland (bid, zw) as (',
-'    select b1.bundeslandid, b1.zweitstimmen from bundeslandergebnisse b1',
-'    where b1.legislaturperiodeid = 2017',
-'    and 1 = (select count(*) from bundeslandergebnisse b2',
-'                        where b2.legislaturperiodeid = 2017',
-'                        and b2.zweitstimmen > b1.zweitstimmen',
-'                        and b1.bundeslandid = b2.bundeslandid)',
-')',
-'',
-'select bb.name as land, p.name as partei',
-'from zweiterproBland zw, bundeslandergebnisse b, bundeslaender bb, parteien p',
-'where zw.zw = b.zweitstimmen',
-'and b.bundeslandid = bb.id',
-'and b.parteiid = p.id',
-'and zw.bid = b.bundeslandid'].join('\n');
+const maxproB = typ => [
+  'with ergproB (bid, m) as (',
+  'select bundeslandid, max(' + typ + ') from bundeslaendergebnisse',
+  'where legislaturperiodeid = 2017 ',
+  'group by bundeslandid )'].join('\n');
 
-export const erststimmensieger =
-['with maxproB (bid, m) as (',
-'select bundeslandid, max(erststimmen) from bundeslandergebnisse',
-'where legislaturperiodeid = 2017',
-'group by bundeslandid )',
-'',
-'select bb.name as land, p.name as partei',
-'from maxproB m, bundeslandergebnisse b, bundeslaender bb, parteien p',
-'where m.m = b.erststimmen',
-'and b.bundeslandid = bb.id',
-'and b.parteiid = p.id',
-'and m.bid = b.bundeslandid',
-''].join('\n');
+const secproB = typ => {
+  return (
+    [ 'with ergproB (bid, m) as (',
+      '    select b1.bundeslandid, b1.' + typ + ' from bundeslandergebnisse b1',
+      '    where b1.legislaturperiodeid = 2017',
+      '    and 1 = (select count(*) from bundeslandergebnisse b2',
+      '                        where b2.legislaturperiodeid = 2017',
+      '                        and b2.' + typ + ' > b1.' + typ,
+      '                        and b1.bundeslandid = b2.bundeslandid)',
+      ')',
+    ].join('\n')
+  );
+}
 
-export const erststimmenFollower =
-['with zweiterproBland (bid, zw) as (',
-'    select b1.bundeslandid, b1.erststimmen from bundeslandergebnisse b1',
-'    where b1.legislaturperiodeid = 2017',
-'    and 1 = (select count(*) from bundeslandergebnisse b2',
-'                        where b2.legislaturperiodeid = 2017',
-'                        and b2.erststimmen > b1.erststimmen',
-'                        and b1.bundeslandid = b2.bundeslandid)',
-')',
-'',
-'select bb.name as land, p.name as partei',
-'from zweiterproBland zw, bundeslandergebnisse b, bundeslaender bb, parteien p',
-'where zw.zw = b.erststimmen',
-'and b.bundeslandid = bb.id',
-'and b.parteiid = p.id',
-'and zw.bid = b.bundeslandid'].join('\n');
+export const bundeslanderg = (typ, platz) => {
+  const t = typ === "erst" ? "erststimmen" : "zweitstimmen";
+  const head = (platz === "sieger" ? maxproB(t) : secproB(t));
+  return (
+    [ head,
+    'select bb.name as land, p.name as partei',
+    'from ergproB m, bundeslaendergebnisse b, bundeslaender bb, parteien p',
+    'where m.m = b.' + t,
+    'and b.bundeslandid = bb.id',
+    'and b.parteiid = p.id',
+    'and m.bid = b.bundeslandid'].join('\n')
+  )
+};
+
 
 export const wahlkreisuebersicht = jahr => (
 ['with wahlkreisuebersicht (legislaturperiodeid,wahlkreisid, wahlbeteiligung, siegerid)as',
@@ -114,7 +89,7 @@ export const wahlkreisuebersicht = jahr => (
 'select b.name Bundesland, wsp.* from wahlkreisuebersicht_sieger_partei wsp, wahlkreise w, bundeslaender b',
 'where w.name = wsp.wahlkreis and w.bundeslandid = b.id'].join('\n'));
 
-
+const wahlkreisFilter = wahlkreis => ("where wahlkreis = '" + wahlkreis + "'");
 export const wahlkreisdetails = (jahr, wahlkreis) => (
 ['    with wahlkreisparteiergebnisse (legislaturperiodeid, wahlkreisname, direktkandidat, anzerststimmen, anteilerst, anzzweitstimmen, anteilzweit, parteiid) as ',
 '',
@@ -144,9 +119,9 @@ export const wahlkreisdetails = (jahr, wahlkreis) => (
 '     w1.wahlkreisname = w2.wahlkreisname ',
 '     where w1.legislaturperiodeid = ' + jahr,
 '    )',
-
 '    select * from wahlkreisparteiergebnisse_vorperiodevergleich',
-'           where wahlkreis = \'' + wahlkreis + '\';'].join('\n'));
+    wahlkreis && wahlkreisFilter(wahlkreis),
+';'].join('\n'));
 
 
 export const ueberhangmandate = jahr => (
@@ -160,13 +135,13 @@ export const ueberhangmandate = jahr => (
 'ble.legislaturperiodeid = ' + jahr,
 'and bl.id = ble.bundeslandid'].join('\n'));
 
-//@TODO
-export const knappsteSiegerVerlierer = jahr => (
+
+export const knappsteSiegerVerlierer = 
 ['With ErsterZweiter (legislaturperiodeid, wahlkreisid, kandidatid, anz, anteil, platz) as',
 '(',
 '    select legislaturperiodeid, wahlkreisid, kandidatid, anz, anteil, ROW_Id',
 '    from (SELECT *, ROW_NUMBER() OVER (PARTITION BY legislaturperiodeid, wahlkreisid order by anz desc)',
-'         AS ROW_ID FROM wahlkreiserststimmenergebnisse) A',
+'         AS ROW_ID FROM wahlkreiserststimmenergebnisse where legislaturperiodeid = 2017) A',
 '    WHERE ROW_ID < 3',
 '),',
 '',
@@ -215,12 +190,133 @@ export const knappsteSiegerVerlierer = jahr => (
 '    from (SELECT *, ROW_NUMBER() OVER (PARTITION BY legislaturperiodeid, partei order by abstand asc)',
 '         AS ROW_ID FROM knappsteVerlierer) A',
 '    WHERE ROW_ID < 11',
+'), gewinnerUndVerlierer ( legislaturperiodeid, wahlkreis, kandidat, partei, "abstand [in %]", gewinner) as',
+'(select legislaturperiodeid, wahlkreis, kandidat, partei, abstand, false as gewinner  from knappsteVerlierer_10',
+'union ',
+'select legislaturperiodeid, wahlkreis, kandidat, partei, prozentualerVOrsprung, true as gewinner from GewinnerVorsprung',
+' )',
+' select * from gewinnerUndVerlierer'].join('\n'); 
+
+
+const gBodyE = 
+['wahlkreis_gewichtete_siegerpartei (wahlkreisid, parteiid) as (',
+'    select ga.wahlkreisid, k.parteiid',
+'    from gewichtete_anteile ga, kandidaten k',
+'    where ',
+'    ga.kandidatid = k.id and',
+'    ga.anteil = (select max(ga2.anteil)',
+'                    from gewichtete_anteile ga2',
+'                    where ga2.wahlkreisid = ga.wahlkreisid)',
+'),',
+'',
+'wahlkreis_regulaere_siegerpartei (wahlkreisid, parteiid) as (',
+'    select wee.wahlkreisid, k.parteiid',
+'    from wahlkreiserststimmenergebnisse wee, kandidaten k',
+'    where ',
+'    wee.kandidatid = k.id and',
+'    wee.legislaturperiodeid = 2017 and',
+'    wee.anteil = (select max(wee2.anteil)',
+'                    from wahlkreiserststimmenergebnisse wee2',
+'                    where wee2.legislaturperiodeid = wee.legislaturperiodeid and',
+'                    wee2.wahlkreisid = wee.wahlkreisid)',
 ')',
 '',
+'select wr.wahlkreisid, wr.parteiid, wg.parteiid',
+'from wahlkreis_gewichtete_siegerpartei wg, wahlkreis_regulaere_siegerpartei wr',
+'where wr.wahlkreisid = wg.wahlkreisid',
+'and wr.parteiid != wg.parteiid;'].join('\n');
+
+const gBodyZ =
+['wahlkreis_gewichtete_siegerpartei (wahlkreisid, parteiid) as (',
+'    select ga.wahlkreisid, ga.parteiid',
+'    from gewichtete_anteile ga',
+'    where',
+'    ga.anteil = (select max(ga2.anteil)',
+'                    from gewichtete_anteile ga2',
+'                    where ga2.wahlkreisid = ga.wahlkreisid)',
+'),',
+'    ',
+'wahlkreis_regulaere_siegerpartei (wahlkreisid, parteiid) as (',
+'    select wze.wahlkreisid, wze.parteiid',
+'    from wahlkreiszweitstimmenergebnisse wze',
+'    where ',
+'    wze.legislaturperiodeid = 2017 and',
+'    wze.anteil = (select max(wze2.anteil)',
+'                    from wahlkreiszweitstimmenergebnisse wze2',
+'                    where wze2.legislaturperiodeid = wze.legislaturperiodeid and',
+'                    wze2.wahlkreisid = wze.wahlkreisid)',
+')',
 '',
-'select wahlkreis, kandidat, partei, abstand as "abstand [in %]", false as gewinner from knappsteVerlierer_10',
-'    where legislaturperiodeid = ' + jahr,
-'union', 
-'select wahlkreis, kandidat, partei, prozentualerVorsprung as "abstand [in %]", true as gewinner from GewinnerVorsprung',
-'    where legislaturperiodeid = ' + jahr].join('\n')
-);
+'select wr.wahlkreisid, wr.parteiid, wg.parteiid',
+'from wahlkreis_gewichtete_siegerpartei wg, wahlkreis_regulaere_siegerpartei wr',
+'where wr.wahlkreisid = wg.wahlkreisid',
+'and wr.parteiid != wg.parteiid'].join('\n');
+
+export const umgewichtung = (gewichtung, typ) => {
+  const body = typ === "erst" ? gBodyE : gBodyZ;
+
+  let head;
+  if (typ === "erst") {
+    if (gewichtung === "falsch") {
+      head =
+        ['with wahlkreis_falschwaehleranteil (wahlkreisid, falschwaehleranteil) as (',
+        '    select wahlkreisid, (ungueltigeerststimmen * 1.0 / waehler)',
+        '    from wahlkreisergebnisse',
+        '    where legislaturperiodeid = 2017),',
+        '    ',
+        'gewichtete_anteile (wahlkreisid, kandidatid, anteil) as (',
+        '    select wn.wahlkreisid, wee.kandidatid, (wee.anteil * wn.falschwaehleranteil)',
+        '    from wahlkreis_falschwaehleranteil wn, wahlkreiserststimmenergebnisse wee',
+        '    where ',
+        '    wee.legislaturperiodeid = 2017 and',
+        '    wee.wahlkreisid = wn.wahlkreisid',
+        '),'].join('\n');
+    } else {
+      head = 
+        ['with wahlkreis_nichtwaehleranteil (wahlkreisid, nichtwaehleranteil) as (',
+        '    select wahlkreisid, 1 - (anzahlwaehler * 1.00 / anzahlwahlberechtigte)',
+        '    from wahlkreisewaehlerwahlberechtigte',
+        '    where legislaturperiodeid = 2017),',
+        '    ',
+        'gewichtete_anteile (wahlkreisid, kandidatid, anteil) as (',
+        '    select wn.wahlkreisid, wee.kandidatid, (wee.anteil * wn.nichtwaehleranteil)',
+        '    from wahlkreis_nichtwaehleranteil wn, wahlkreiserststimmenergebnisse wee',
+        '    where ',
+        '    wee.legislaturperiodeid = 2017 and',
+        '    wee.wahlkreisid = wn.wahlkreisid',
+        '),'].join('\n');
+    }
+  } else {
+    if (gewichtung === "falsch") {
+      head =
+        ['with wahlkreis_falschwaehleranteil (wahlkreisid, falschwaehleranteil) as (',
+        '    select wahlkreisid, (ungueltigezweitstimmen * 1.0 / waehler)',
+        '    from wahlkreisergebnisse',
+        '    where legislaturperiodeid = 2017),',
+        '    ',
+        'gewichtete_anteile (wahlkreisid, parteiid, anteil) as (',
+        '    select wn.wahlkreisid, wze.parteiid, (wze.anteil * wn.falschwaehleranteil)',
+        '    from wahlkreis_falschwaehleranteil wn, wahlkreiszweitstimmenergebnisse wze',
+        '    where ',
+        '    wze.legislaturperiodeid = 2017 and',
+        '    wze.wahlkreisid = wn.wahlkreisid',
+        '),'].join('\n');
+    } else {
+      head = 
+        ['with wahlkreis_nichtwaehleranteil (wahlkreisid, nichtwaehleranteil) as (',
+        '    select wahlkreisid, 1 - (anzahlwaehler * 1.00 / anzahlwahlberechtigte)',
+        '    from wahlkreisewaehlerwahlberechtigte',
+        '    where legislaturperiodeid = 2017),',
+        '    ',
+        'gewichtete_anteile (wahlkreisid, parteiid, anteil) as (',
+        '    select wn.wahlkreisid, wze.parteiid, (wze.anteil * wn.nichtwaehleranteil)',
+        '    from wahlkreis_nichtwaehleranteil wn, wahlkreiszweitstimmenergebnisse wze',
+        '    where ',
+        '    wze.legislaturperiodeid = 2017 and',
+        '    wze.wahlkreisid = wn.wahlkreisid',
+        '),'].join('\n');
+    }
+  }
+
+  return [head, body].join("\n");
+}
