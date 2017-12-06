@@ -3,7 +3,6 @@
 import "babel-polyfill";
 import _ from "lodash";
 
-
 import express from "express";
 import * as dbConnector from "./dbConnector"
 import * as queries from "./queries";
@@ -18,41 +17,10 @@ app.use(function(req, res, next) {
   next();
 });
 
-// app.get("/", async (req, res) => {
-//   // const { id } = req.params
-//   const { rows } = await dbConnector.query("SELECT * FROM bundeslaender ORDER BY id ASC")
-//   res.send(rows)
-// } );
-
-// const parteien = ["DIE LINKE", "Sozialdemokratische Partei Deutschlands", "Freie Demokratische Partei"];
-// const parteienIdents = ["Linke", "SPD", "FDP"] //_.map(parteien, partei => partei.split(' ').join(''));
-// const parteienZip = _.zipWith(parteien, parteienIdents, (p, i) => [p, i]);
-
-// const parteiergebnisseQuery = partei =>
-// "select distinct wke.wahlkreisid wahlkreis, wke.anz " + partei + " from parteien p, " +
-// "wahlkreiserststimmenergebnisse wke, kandidaten k, direktkandidaturen dk " + 
-// "where wke.kandidatid = k.id and wke.legislaturperiodeid = '2017' and k.parteiid = p.id " + 
-// "and p.name = $1 order by wahlkreis asc"
-
-
-// const group = (key, mapArr) => _.groupBy(mapArr, e => e[key]);
-// const mergeMapsByValueOfKey = (key, mapArr) => _.map(group(key, mapArr),  e => _.merge(...e));
-
-// app.get("/parteiergebnisse", async (req, res) => {
-//   const results = await Promise.all(parteienZip.map(partei => dbConnector.query(parteiergebnisseQuery(partei[1]), [partei[0]])))
-//   .then(r => r.map(qr => (qr.rows))) //get rows
-//   .then(r => _.flatten(r))
-//   .then(r => mergeMapsByValueOfKey("wahlkreis", r))
-
-//   res.send(results);
-// });
-
-const sitzverteilung = "select p.name as partei, sitze from SitzverteilungBundestagParteien sbp, parteien p " +
-  "where legislaturperiodeid = '2017' and p.id = sbp.parteiid";
 
 //Q1
 app.get("/sitzverteilung", async (req, res) => {
-  const { rows } = await dbConnector.query(sitzverteilung);
+  const { rows } = await dbConnector.query(queries.sitzverteilung);
   res.send(rows);
 })
 
@@ -86,12 +54,37 @@ app.get("/knappste/", async (req, res) => {
   res.send(rows);
 })
 
+//Abfrage Frauen- & Männerquote - Bundestag gesamt
+app.get("/bundestagQuote", async (req, res) => {
+  const { rows } = await dbConnector.query(queries.bundestagQuote);
+  res.send(rows);
+})
+
+//Abfrage Frauen- & Männerquote - Bundestag Parteiebene
+app.get("/bundestagParteienQuote", async (req, res) => {
+  const { rows } = await dbConnector.query(queries.bundestagParteienQuote);
+  res.send(rows);
+})
+
+//Abfrage Altersstufen - Bundestag gesamt
+app.get("/bundestagAlter", async (req, res) => {
+  const { rows } = await dbConnector.query(queries.bundestagAlter);
+  res.send(rows);
+})
+
+//Abfrage Altersstufen - Bundestag Parteiebene
+app.get("/bundestagParteienAlter", async (req, res) => {
+  const { rows } = await dbConnector.query(queries.bundestagParteienAlter);
+  res.send(rows);
+})
+
 //Eigene Abfrage
 app.get("/umgewichtung", async (req, res) => {
   const { rows } = await dbConnector.query(queries.umgewichtung);
   res.send(rows);
 })
 
+//Add-On: Umgewichtungsplot
 app.get("/umgewichtungPlot", async (req, res) => {
   const { rows } = await dbConnector.query(queries.umgewichtungPlot);
   res.send(rows);
