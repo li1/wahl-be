@@ -197,126 +197,172 @@ export const knappsteSiegerVerlierer =
 ' )',
 ' select * from gewinnerUndVerlierer'].join('\n'); 
 
+export const umgewichtungPlot = 
+['-- Vergleich von Zweitstimmenergebnis: regulär vs. falschwähler',
+'with wahlkreis_falschwaehleranteil (wahlkreisid, falschwaehleranteil) as (',
+'  select wahlkreisid, (ungueltigezweitstimmen * 1.0 / waehler)',
+'  from wahlkreisergebnisse',
+'  where legislaturperiodeid = 2017)',
+'',
+'select p.name, wf.*, wze.anteil from wahlkreis_falschwaehleranteil wf, wahlkreiszweitstimmenergebnisse wze, parteien p',
+'where wze.legislaturperiodeid = 2017 and',
+'wze.wahlkreisid = wf.wahlkreisid and',
+'wze.parteiid = p.id',
+'order by p.id, wahlkreisid asc'].join('\n');
 
-const gBodyE = 
-['wahlkreis_gewichtete_siegerpartei (wahlkreisid, parteiid) as (',
-'    select ga.wahlkreisid, k.parteiid',
-'    from gewichtete_anteile ga, kandidaten k',
-'    where ',
-'    ga.kandidatid = k.id and',
-'    ga.anteil = (select max(ga2.anteil)',
-'                    from gewichtete_anteile ga2',
-'                    where ga2.wahlkreisid = ga.wahlkreisid)',
+export const umgewichtung =
+['-- Vergleich von Zweitstimmenergebnis: regulär vs. mit Falschwählern gewichtet   ',
+'with wahlkreis_falschwaehleranteil (wahlkreisid, falschwaehleranteil) as (',
+'  select wahlkreisid, (ungueltigezweitstimmen * 1.0 / waehler)',
+'  from wahlkreisergebnisse',
+'  where legislaturperiodeid = 2017),',
+'',
+'wahlkreis_gewichtete_anz (wahlkreisid, parteiid, anz) as (',
+'  select wze.wahlkreisid, parteiid, anz * falschwaehleranteil',
+'  from wahlkreiszweitstimmenergebnisse wze, wahlkreis_falschwaehleranteil wf',
+'  where legislaturperiodeid = 2017 and',
+'  wze.wahlkreisid = wf.wahlkreisid',
 '),',
 '',
-'wahlkreis_regulaere_siegerpartei (wahlkreisid, parteiid) as (',
-'    select wee.wahlkreisid, k.parteiid',
-'    from wahlkreiserststimmenergebnisse wee, kandidaten k',
-'    where ',
-'    wee.kandidatid = k.id and',
-'    wee.legislaturperiodeid = 2017 and',
-'    wee.anteil = (select max(wee2.anteil)',
-'                    from wahlkreiserststimmenergebnisse wee2',
-'                    where wee2.legislaturperiodeid = wee.legislaturperiodeid and',
-'                    wee2.wahlkreisid = wee.wahlkreisid)',
-')',
-'',
-'select wr.wahlkreisid, wr.parteiid, wg.parteiid',
-'from wahlkreis_gewichtete_siegerpartei wg, wahlkreis_regulaere_siegerpartei wr',
-'where wr.wahlkreisid = wg.wahlkreisid',
-'and wr.parteiid != wg.parteiid;'].join('\n');
-
-const gBodyZ =
-['wahlkreis_gewichtete_siegerpartei (wahlkreisid, parteiid) as (',
-'    select ga.wahlkreisid, ga.parteiid',
-'    from gewichtete_anteile ga',
-'    where',
-'    ga.anteil = (select max(ga2.anteil)',
-'                    from gewichtete_anteile ga2',
-'                    where ga2.wahlkreisid = ga.wahlkreisid)',
+'regulaeres_summenergebnis (parteiid, anteil) as (',
+'  select parteiid, sum(wze.anz) * 1.0 / (select sum(anz) from wahlkreiszweitstimmenergebnisse where legislaturperiodeid = 2017)',
+'  from wahlkreiszweitstimmenergebnisse wze',
+'  where legislaturperiodeid = 2017',
+'  group by parteiid',
 '),',
-'    ',
-'wahlkreis_regulaere_siegerpartei (wahlkreisid, parteiid) as (',
-'    select wze.wahlkreisid, wze.parteiid',
-'    from wahlkreiszweitstimmenergebnisse wze',
-'    where ',
-'    wze.legislaturperiodeid = 2017 and',
-'    wze.anteil = (select max(wze2.anteil)',
-'                    from wahlkreiszweitstimmenergebnisse wze2',
-'                    where wze2.legislaturperiodeid = wze.legislaturperiodeid and',
-'                    wze2.wahlkreisid = wze.wahlkreisid)',
+'',
+'gewichtetes_summenergebnis (parteiid, anteil) as (',
+'  select parteiid, sum(wga.anz) * 1.0 / (select sum(anz) from wahlkreis_gewichtete_anz)',
+'  from wahlkreis_gewichtete_anz wga',
+'  group by parteiid',
 ')',
 '',
-'select wr.wahlkreisid, wr.parteiid, wg.parteiid',
-'from wahlkreis_gewichtete_siegerpartei wg, wahlkreis_regulaere_siegerpartei wr',
-'where wr.wahlkreisid = wg.wahlkreisid',
-'and wr.parteiid != wg.parteiid'].join('\n');
+'select p.name, rs.anteil \"Regulärer Zweitstimmenanteil [in %]\", gs.anteil \"Gewichteter Zweitstimmenanteil [in %]\", gs.anteil - rs.anteil \"Veränderung [in %]\"',
+'from gewichtetes_summenergebnis gs, regulaeres_summenergebnis rs, parteien p',
+'where gs.parteiid = rs.parteiid',
+'and p.id = gs.parteiid',
+'order by \"Veränderung [in %]\" desc;'].join('\n');
 
-export const umgewichtung = (gewichtung, typ) => {
-  const body = typ === "erst" ? gBodyE : gBodyZ;
 
-  let head;
-  if (typ === "erst") {
-    if (gewichtung === "falsch") {
-      head =
-        ['with wahlkreis_falschwaehleranteil (wahlkreisid, falschwaehleranteil) as (',
-        '    select wahlkreisid, (ungueltigeerststimmen * 1.0 / waehler)',
-        '    from wahlkreisergebnisse',
-        '    where legislaturperiodeid = 2017),',
-        '    ',
-        'gewichtete_anteile (wahlkreisid, kandidatid, anteil) as (',
-        '    select wn.wahlkreisid, wee.kandidatid, (wee.anteil * wn.falschwaehleranteil)',
-        '    from wahlkreis_falschwaehleranteil wn, wahlkreiserststimmenergebnisse wee',
-        '    where ',
-        '    wee.legislaturperiodeid = 2017 and',
-        '    wee.wahlkreisid = wn.wahlkreisid',
-        '),'].join('\n');
-    } else {
-      head = 
-        ['with wahlkreis_nichtwaehleranteil (wahlkreisid, nichtwaehleranteil) as (',
-        '    select wahlkreisid, 1 - (anzahlwaehler * 1.00 / anzahlwahlberechtigte)',
-        '    from wahlkreisewaehlerwahlberechtigte',
-        '    where legislaturperiodeid = 2017),',
-        '    ',
-        'gewichtete_anteile (wahlkreisid, kandidatid, anteil) as (',
-        '    select wn.wahlkreisid, wee.kandidatid, (wee.anteil * wn.nichtwaehleranteil)',
-        '    from wahlkreis_nichtwaehleranteil wn, wahlkreiserststimmenergebnisse wee',
-        '    where ',
-        '    wee.legislaturperiodeid = 2017 and',
-        '    wee.wahlkreisid = wn.wahlkreisid',
-        '),'].join('\n');
-    }
-  } else {
-    if (gewichtung === "falsch") {
-      head =
-        ['with wahlkreis_falschwaehleranteil (wahlkreisid, falschwaehleranteil) as (',
-        '    select wahlkreisid, (ungueltigezweitstimmen * 1.0 / waehler)',
-        '    from wahlkreisergebnisse',
-        '    where legislaturperiodeid = 2017),',
-        '    ',
-        'gewichtete_anteile (wahlkreisid, parteiid, anteil) as (',
-        '    select wn.wahlkreisid, wze.parteiid, (wze.anteil * wn.falschwaehleranteil)',
-        '    from wahlkreis_falschwaehleranteil wn, wahlkreiszweitstimmenergebnisse wze',
-        '    where ',
-        '    wze.legislaturperiodeid = 2017 and',
-        '    wze.wahlkreisid = wn.wahlkreisid',
-        '),'].join('\n');
-    } else {
-      head = 
-        ['with wahlkreis_nichtwaehleranteil (wahlkreisid, nichtwaehleranteil) as (',
-        '    select wahlkreisid, 1 - (anzahlwaehler * 1.00 / anzahlwahlberechtigte)',
-        '    from wahlkreisewaehlerwahlberechtigte',
-        '    where legislaturperiodeid = 2017),',
-        '    ',
-        'gewichtete_anteile (wahlkreisid, parteiid, anteil) as (',
-        '    select wn.wahlkreisid, wze.parteiid, (wze.anteil * wn.nichtwaehleranteil)',
-        '    from wahlkreis_nichtwaehleranteil wn, wahlkreiszweitstimmenergebnisse wze',
-        '    where ',
-        '    wze.legislaturperiodeid = 2017 and',
-        '    wze.wahlkreisid = wn.wahlkreisid',
-        '),'].join('\n');
-    }
-  }
+// const gBodyE = 
+// ['wahlkreis_gewichtete_siegerpartei (wahlkreisid, parteiid) as (',
+// '    select ga.wahlkreisid, k.parteiid',
+// '    from gewichtete_anteile ga, kandidaten k',
+// '    where ',
+// '    ga.kandidatid = k.id and',
+// '    ga.anteil = (select max(ga2.anteil)',
+// '                    from gewichtete_anteile ga2',
+// '                    where ga2.wahlkreisid = ga.wahlkreisid)',
+// '),',
+// '',
+// 'wahlkreis_regulaere_siegerpartei (wahlkreisid, parteiid) as (',
+// '    select wee.wahlkreisid, k.parteiid',
+// '    from wahlkreiserststimmenergebnisse wee, kandidaten k',
+// '    where ',
+// '    wee.kandidatid = k.id and',
+// '    wee.legislaturperiodeid = 2017 and',
+// '    wee.anteil = (select max(wee2.anteil)',
+// '                    from wahlkreiserststimmenergebnisse wee2',
+// '                    where wee2.legislaturperiodeid = wee.legislaturperiodeid and',
+// '                    wee2.wahlkreisid = wee.wahlkreisid)',
+// ')',
+// '',
+// 'select wr.wahlkreisid, wr.parteiid, wg.parteiid',
+// 'from wahlkreis_gewichtete_siegerpartei wg, wahlkreis_regulaere_siegerpartei wr',
+// 'where wr.wahlkreisid = wg.wahlkreisid',
+// 'and wr.parteiid != wg.parteiid;'].join('\n');
 
-  return [head, body].join("\n");
-}
+// const gBodyZ =
+// ['wahlkreis_gewichtete_siegerpartei (wahlkreisid, parteiid) as (',
+// '    select ga.wahlkreisid, ga.parteiid',
+// '    from gewichtete_anteile ga',
+// '    where',
+// '    ga.anteil = (select max(ga2.anteil)',
+// '                    from gewichtete_anteile ga2',
+// '                    where ga2.wahlkreisid = ga.wahlkreisid)',
+// '),',
+// '    ',
+// 'wahlkreis_regulaere_siegerpartei (wahlkreisid, parteiid) as (',
+// '    select wze.wahlkreisid, wze.parteiid',
+// '    from wahlkreiszweitstimmenergebnisse wze',
+// '    where ',
+// '    wze.legislaturperiodeid = 2017 and',
+// '    wze.anteil = (select max(wze2.anteil)',
+// '                    from wahlkreiszweitstimmenergebnisse wze2',
+// '                    where wze2.legislaturperiodeid = wze.legislaturperiodeid and',
+// '                    wze2.wahlkreisid = wze.wahlkreisid)',
+// ')',
+// '',
+// 'select wr.wahlkreisid, wr.parteiid, wg.parteiid',
+// 'from wahlkreis_gewichtete_siegerpartei wg, wahlkreis_regulaere_siegerpartei wr',
+// 'where wr.wahlkreisid = wg.wahlkreisid',
+// 'and wr.parteiid != wg.parteiid'].join('\n');
+
+// export const umgewichtung = (gewichtung, typ) => {
+//   const body = typ === "erst" ? gBodyE : gBodyZ;
+
+//   let head;
+//   if (typ === "erst") {
+//     if (gewichtung === "falsch") {
+//       head =
+//         ['with wahlkreis_falschwaehleranteil (wahlkreisid, falschwaehleranteil) as (',
+//         '    select wahlkreisid, (ungueltigeerststimmen * 1.0 / waehler)',
+//         '    from wahlkreisergebnisse',
+//         '    where legislaturperiodeid = 2017),',
+//         '    ',
+//         'gewichtete_anteile (wahlkreisid, kandidatid, anteil) as (',
+//         '    select wn.wahlkreisid, wee.kandidatid, (wee.anteil * wn.falschwaehleranteil)',
+//         '    from wahlkreis_falschwaehleranteil wn, wahlkreiserststimmenergebnisse wee',
+//         '    where ',
+//         '    wee.legislaturperiodeid = 2017 and',
+//         '    wee.wahlkreisid = wn.wahlkreisid',
+//         '),'].join('\n');
+//     } else {
+//       head = 
+//         ['with wahlkreis_nichtwaehleranteil (wahlkreisid, nichtwaehleranteil) as (',
+//         '    select wahlkreisid, 1 - (anzahlwaehler * 1.00 / anzahlwahlberechtigte)',
+//         '    from wahlkreisewaehlerwahlberechtigte',
+//         '    where legislaturperiodeid = 2017),',
+//         '    ',
+//         'gewichtete_anteile (wahlkreisid, kandidatid, anteil) as (',
+//         '    select wn.wahlkreisid, wee.kandidatid, (wee.anteil * wn.nichtwaehleranteil)',
+//         '    from wahlkreis_nichtwaehleranteil wn, wahlkreiserststimmenergebnisse wee',
+//         '    where ',
+//         '    wee.legislaturperiodeid = 2017 and',
+//         '    wee.wahlkreisid = wn.wahlkreisid',
+//         '),'].join('\n');
+//     }
+//   } else {
+//     if (gewichtung === "falsch") {
+//       head =
+//         ['with wahlkreis_falschwaehleranteil (wahlkreisid, falschwaehleranteil) as (',
+//         '    select wahlkreisid, (ungueltigezweitstimmen * 1.0 / waehler)',
+//         '    from wahlkreisergebnisse',
+//         '    where legislaturperiodeid = 2017),',
+//         '    ',
+//         'gewichtete_anteile (wahlkreisid, parteiid, anteil) as (',
+//         '    select wn.wahlkreisid, wze.parteiid, (wze.anteil * wn.falschwaehleranteil)',
+//         '    from wahlkreis_falschwaehleranteil wn, wahlkreiszweitstimmenergebnisse wze',
+//         '    where ',
+//         '    wze.legislaturperiodeid = 2017 and',
+//         '    wze.wahlkreisid = wn.wahlkreisid',
+//         '),'].join('\n');
+//     } else {
+//       head = 
+//         ['with wahlkreis_nichtwaehleranteil (wahlkreisid, nichtwaehleranteil) as (',
+//         '    select wahlkreisid, 1 - (anzahlwaehler * 1.00 / anzahlwahlberechtigte)',
+//         '    from wahlkreisewaehlerwahlberechtigte',
+//         '    where legislaturperiodeid = 2017),',
+//         '    ',
+//         'gewichtete_anteile (wahlkreisid, parteiid, anteil) as (',
+//         '    select wn.wahlkreisid, wze.parteiid, (wze.anteil * wn.nichtwaehleranteil)',
+//         '    from wahlkreis_nichtwaehleranteil wn, wahlkreiszweitstimmenergebnisse wze',
+//         '    where ',
+//         '    wze.legislaturperiodeid = 2017 and',
+//         '    wze.wahlkreisid = wn.wahlkreisid',
+//         '),'].join('\n');
+//     }
+//   }
+
+//  return [head, body].join("\n");
+//}

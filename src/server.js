@@ -86,9 +86,14 @@ app.get("/knappste/", async (req, res) => {
   res.send(rows);
 })
 
-//eigene Abfrage: Ergebnisunterschiede bei Umgewichtung
-app.get("/umgewichtung/:gewichtung/:typ", async (req, res) => {
-  const { rows } = await dbConnector.query(queries.umgewichtung(req.params.gewichtung, req.params.typ));
+//Eigene Abfrage
+app.get("/umgewichtung", async (req, res) => {
+  const { rows } = await dbConnector.query(queries.umgewichtung);
+  res.send(rows);
+})
+
+app.get("/umgewichtungPlot", async (req, res) => {
+  const { rows } = await dbConnector.query(queries.umgewichtungPlot);
   res.send(rows);
 })
 
