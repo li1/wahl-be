@@ -78,6 +78,12 @@ app.get("/bundestagParteienAlter", async (req, res) => {
   res.send(rows);
 })
 
+//Abfrage Frauen- & Männerquote nach Altersstufen - Bundestag gesamt
+app.get("/bundestagAlterQuote", async (req, res) => {
+  const { rows } = await dbConnector.query(queries.bundestagAlterQuote);
+  res.send(rows);
+})
+
 //Eigene Abfrage
 app.get("/umgewichtung", async (req, res) => {
   const { rows } = await dbConnector.query(queries.umgewichtung);
