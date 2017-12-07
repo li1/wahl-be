@@ -468,3 +468,23 @@ export const bundestagAlterQuote =
 '    mitglieder_41_50.geschlecht = mitglieder_51_60.geschlecht and',
 '    mitglieder_51_60.geschlecht = mitglieder_61_70.geschlecht and',
 '    mitglieder_61_70.geschlecht = mitglieder_71_up.geschlecht;'].join('\n');
+
+
+export const wahlkreiskandidaten = (wahlkreisid) => (
+    ['   select COALESCE(k.titel || \' \', \'\') || k.nachname || \', \' || k.vorname, k.beruf, k.geburtsjahr, p.name',
+        '   from direktkandidaturen dk, kandidaten k, parteien p',
+        'where dk.kandidatid = k.id',
+        'and dk.legislaturperiodeid=2017',
+        'and dk.wahlkreisid = ' + wahlkreisid,
+        ' and k.parteiid = p.id'].join('\n'));
+
+export const wahlkreisparteien = (wahlkreisid) => (
+    [' select p.name',
+     ' from wahlkreiszweitstimmenergebnisse wz, parteien p',
+        '   where wz.parteiid = p.id',
+        ' and legislaturperiodeid = 2017',
+        ' and wz.wahlkreisid =' + wahlkreisid].join('\n'));
+
+
+
+

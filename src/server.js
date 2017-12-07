@@ -104,6 +104,16 @@ app.get("/bundeslanderg/:typ/:platz", async (req, res) => {
   res.send(rows);
 })
 
+app.get("/wahlkreisdirektkandidaten/:wahlkreisid", async (req, res) => {
+    const { rows } = await dbConnector.query(queries.wahlkreiskandidaten(req.params.wahlkreisid));
+    res.send(rows);
+})
+
+app.get("/wahlkreisparteien/:wahlkreisid", async (req, res) => {
+    const { rows } = await dbConnector.query(queries.wahlkreisparteien(req.params.wahlkreisid));
+    res.send(rows);
+})
+
 app.listen(3000, () => {
   console.log("App listening on port 3000!");
 })
