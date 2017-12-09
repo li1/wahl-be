@@ -471,7 +471,7 @@ export const bundestagAlterQuote =
 
 
 export const wahlkreiskandidaten = (wahlkreisid) => (
-    ['   select COALESCE(k.titel || \' \', \'\') || k.nachname || \', \' || k.vorname, k.beruf, k.geburtsjahr, p.name',
+    ['   select COALESCE(k.titel || \' \', \'\') || k.nachname || \', \' || k.vorname as Name, k.beruf, k.geburtsjahr, p.name Partei',
         '   from direktkandidaturen dk, kandidaten k, parteien p',
         'where dk.kandidatid = k.id',
         'and dk.legislaturperiodeid=2017',
