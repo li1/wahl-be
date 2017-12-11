@@ -1,4 +1,4 @@
-export const sitzverteilung = "select p.name as partei, sitze from SitzverteilungBundestagParteien sbp, parteien p " +
+export const sitzverteilung = "select p.name as partei, sitze::real from SitzverteilungBundestagParteien sbp, parteien p " +
   "where legislaturperiodeid = '2017' and p.id = sbp.parteiid";
 
 export const bundestagsmitglieder = "with Bundestagsmitglieder (partei, bundesland, direktkandidat, listenplatz, vorname, nachname, geschlecht, geburtsjahr, beruf) AS " +
@@ -7,7 +7,7 @@ export const bundestagsmitglieder = "with Bundestagsmitglieder (partei, bundesla
     "from abgeordnete a, parteien p, kandidaten k " +
     "left outer join listenplaetze l on k.id = l.kandidatid  " +
     "left outer join landeslisten ll on ll.id = l.landeslisteid " +
-    "left outer join direktkandidaturen dk on k.id = dk.kandidatid " +
+    "left outer join direktkandidaten dk on k.id = dk.kandidatid " +
     "left outer join wahlkreise w on w.id = dk.wahlkreisid " +
     "where a.legislaturperiodeid = 2017  " +
     "and a.parteiid = p.id  " +
@@ -20,16 +20,16 @@ export const bundestagsmitglieder = "with Bundestagsmitglieder (partei, bundesla
 
 const maxproB = typ => [
   'with ergproB (bid, m) as (',
-  'select bundeslandid, max(' + typ + ') from bundeslaendergebnisse',
+  'select bundeslandid, max(' + typ + ') from bundeslaenderergebnisse',
   'where legislaturperiodeid = 2017 ',
   'group by bundeslandid )'].join('\n');
 
 const secproB = typ => {
   return (
     [ 'with ergproB (bid, m) as (',
-      '    select b1.bundeslandid, b1.' + typ + ' from bundeslandergebnisse b1',
+      '    select b1.bundeslandid, b1.' + typ + ' from bundeslaenderergebnisse b1',
       '    where b1.legislaturperiodeid = 2017',
-      '    and 1 = (select count(*) from bundeslandergebnisse b2',
+      '    and 1 = (select count(*) from bundeslaenderergebnisse b2',
       '                        where b2.legislaturperiodeid = 2017',
       '                        and b2.' + typ + ' > b1.' + typ,
       '                        and b1.bundeslandid = b2.bundeslandid)',
@@ -44,7 +44,7 @@ export const bundeslanderg = (typ, platz) => {
   return (
     [ head,
     'select bb.name as land, p.name as partei',
-    'from ergproB m, bundeslaendergebnisse b, bundeslaender bb, parteien p',
+    'from ergproB m, bundeslaenderergebnisse b, bundeslaender bb, parteien p',
     'where m.m = b.' + t,
     'and b.bundeslandid = bb.id',
     'and b.parteiid = p.id',
@@ -58,7 +58,7 @@ export const wahlkreisuebersicht = jahr => (
 '',
 '(select we.legislaturperiodeid, we.wahlkreisid, anzahlwaehler * 1.00 / anzahlwahlberechtigte,',
 '(select dk.kandidatid',
-'from wahlkreiserststimmenergebnisse werst, direktkandidaturen dk',
+'from wahlkreiserststimmenergebnisse werst, direktkandidaten dk',
 'where we.wahlkreisid = werst.wahlkreisid',
 'and we.legislaturperiodeid = werst.legislaturperiodeid and',
 'werst.wahlkreisid = dk.wahlkreisid and',
@@ -92,13 +92,14 @@ export const wahlkreisuebersicht = jahr => (
 'select b.name Bundesland, wsp.* from wahlkreisuebersicht_sieger_partei wsp, wahlkreise w, bundeslaender b',
 'where w.name = wsp.wahlkreis and w.bundeslandid = b.id'].join('\n'));
 
-const wahlkreisFilter = wahlkreis => ("where wahlkreis = '" + wahlkreis + "'");
+const wahlkreisFilter = wahlkreis => ("w.id = " + wahlkreis + " and");
 export const wahlkreisdetails = (jahr, wahlkreis) => (
 ['    with wahlkreisparteiergebnisse (legislaturperiodeid, wahlkreisname, direktkandidat, anzerststimmen, anteilerst, anzzweitstimmen, anteilzweit, parteiid) as ',
 '',
 '    (select we.legislaturperiodeid, w.name,  k.nachname || \', \' || k.vorname, we.anz, we.anteil, wz.anz, wz.anteil, p.name',
 '    from  Wahlkreiserststimmenergebnisse we, Wahlkreiszweitstimmenergebnisse wz, Kandidaten k, Wahlkreise w,  Parteien p',
 '    where we.wahlkreisid = wz.wahlkreisid and',
+  wahlkreis && wahlkreisFilter(wahlkreis),
 '     w.id = we.wahlkreisid and',
 '     p.id = wz.parteiid and',
 '    we.kandidatid = k.id and',
@@ -123,15 +124,14 @@ export const wahlkreisdetails = (jahr, wahlkreis) => (
 '     where w1.legislaturperiodeid = ' + jahr,
 '    )',
 '    select * from wahlkreisparteiergebnisse_vorperiodevergleich',
-    wahlkreis && wahlkreisFilter(wahlkreis),
 ';'].join('\n'));
 
 
 export const ueberhangmandate = jahr => (
 ['select bl.name Bundesland, p.name Partei,',
 '    CASE WHEN  ble.Direktmandate < pzm.Mandate THEN 0 ELSE ble.Direktmandate - pzm.Mandate END AS "Überhangmandate"',
-'from Bundeslaendergebnisse ble, ParteienZweitstimmenmandate pzm, Parteien p, Bundeslaender bl',
-'where ble.legislaturperiodeid = pzm.legislaturperiode and',
+'from Bundeslaenderergebnisse ble, ParteienZweitstimmenmandate pzm, Parteien p, Bundeslaender bl',
+'where ble.legislaturperiodeid = pzm.legislaturperiodeid and',
 'ble.parteiid = pzm.parteiid and',
 'ble.bundeslandid = pzm.bundeslandid and',
 'p.id = ble.parteiid and',
@@ -174,7 +174,7 @@ export const knappsteSiegerVerlierer =
 '),',
 ' knappsteVerlierer (legislaturperiodeid, wahlkreis, kandidat, partei, abstand ) as',
 '(select werst.legislaturperiodeid, w.name, k.nachname || \', \' || k.vorname as kandidat, p.name, gv.anteil - werst.anteil as abstand',
-'from verliererParteien, direktkandidaturen dk, kandidaten k, ',
+'from verliererParteien, direktkandidaten dk, kandidaten k, ',
 '        GewinnerVorsprung gv, wahlkreiserststimmenergebnisse werst,',
 '        wahlkreise w, parteien p',
 'where dk.kandidatid = k.id ',
@@ -472,7 +472,7 @@ export const bundestagAlterQuote =
 
 export const wahlkreiskandidaten = (wahlkreisid) => (
     ['   select COALESCE(k.titel || \' \', \'\') || k.nachname || \', \' || k.vorname as Name, k.beruf, k.geburtsjahr, p.name Partei',
-        '   from direktkandidaturen dk, kandidaten k, parteien p',
+        '   from direktkandidaten dk, kandidaten k, parteien p',
         'where dk.kandidatid = k.id',
         'and dk.legislaturperiodeid=2017',
         'and dk.wahlkreisid = ' + wahlkreisid,

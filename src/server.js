@@ -49,7 +49,7 @@ app.get("/ueberhangmandate/:jahr", async (req, res) => {
 })
 
 //Q6
-app.get("/knappste/", async (req, res) => {
+app.get("/knappste", async (req, res) => {
   const { rows } = await dbConnector.query(queries.knappsteSiegerVerlierer);
   res.send(rows);
 })
