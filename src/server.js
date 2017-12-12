@@ -49,7 +49,7 @@ app.get("/ueberhangmandate/:jahr", async (req, res) => {
 })
 
 //Q6
-app.get("/knappste/", async (req, res) => {
+app.get("/knappste", async (req, res) => {
   const { rows } = await dbConnector.query(queries.knappsteSiegerVerlierer);
   res.send(rows);
 })
@@ -133,3 +133,5 @@ app.get("/wahlkreisparteien/:wahlkreisid", async (req, res) => {
 app.listen(3000, () => {
   console.log("App listening on port 3000!");
 })
+
+module.exports = app;
