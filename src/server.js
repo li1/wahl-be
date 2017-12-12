@@ -102,7 +102,21 @@ app.get("/umgewichtungPlot", async (req, res) => {
 app.get("/bundeslanderg/:typ/:platz", async (req, res) => {
   const { rows } = await dbConnector.query(queries.bundeslanderg(req.params.typ, req.params.platz));
   res.send(rows);
-})
+});
+
+app.get("/votingcode/:code", async(req, res) => {
+
+      const { rows } = await dbConnector.query(queries.votingcode_wahlkreisid(req.params.code));
+      let result = '{ "status" : "Not Ok", "WahlkreisID" : null }';
+      if (rows.length > 0) {
+          //code exists in the database
+          result = '{ "status" : "OK", "WahlkreisID" :' +  rows[0]["wahlkreisid"] + '}';
+      }
+
+
+      res.send(result);
+
+  });
 
 app.get("/wahlkreisdirektkandidaten/:wahlkreisid", async (req, res) => {
     const { rows } = await dbConnector.query(queries.wahlkreiskandidaten(req.params.wahlkreisid));
@@ -113,6 +127,8 @@ app.get("/wahlkreisparteien/:wahlkreisid", async (req, res) => {
     const { rows } = await dbConnector.query(queries.wahlkreisparteien(req.params.wahlkreisid));
     res.send(rows);
 })
+
+
 
 app.listen(3000, () => {
   console.log("App listening on port 3000!");

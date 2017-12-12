@@ -485,6 +485,13 @@ export const wahlkreisparteien = (wahlkreisid) => (
         ' and legislaturperiodeid = 2017',
         ' and wz.wahlkreisid =' + wahlkreisid].join('\n'));
 
+export const votingcode_wahlkreisid = (votingcode) => (
+    [
+        'select wahlkreisid from stimmabgabencodes',
+        'where code = \''  +  votingcode + '\''].join('\n'));
+
+
+
 
 
 
