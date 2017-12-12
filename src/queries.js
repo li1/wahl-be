@@ -247,11 +247,12 @@ export const umgewichtung =
 'order by \"Veränderung [in %]\" desc;'].join('\n');
 
 export const bundestagQuote = 
-['with m (anz) as (select count(*) from bundestagsmitglieder)',
+['with pmac (c) as (select count(*) from kandidaten),',
+'pmmc (c) as (select count(*) from kandidaten where geschlecht = \'m\'),',
+'pmwc (c) as (select count(*) from kandidaten where geschlecht = \'w\')',
 '',
-'select round(((select count(*) from bundestagsmitglieder where geschlecht = \'m\') * 100.0 / m.anz), 2)::real \"Männeranteil\",',
-'       round(((select count(*) from bundestagsmitglieder where geschlecht = \'w\') * 100.0 / m.anz), 2)::real \"Frauenanteil\"',
-'from m;'].join('\n');
+'select round(pmmc.c * 1.0 / pmac.c, 2) \"Männeranteil\", round(pmwc.c * 1.0 / pmac.c, 2) \"Frauenanteil\" ',
+'from pmmc, pmwc, pmac;'].join('\n');
 
 export const bundestagParteienQuote =
 ['-- Frauen- und Männerquote im Bundestag (auf Parteienebene)',
