@@ -107,10 +107,10 @@ describe("Queries", () => {
   });
 
   describe("Q3.3, Q3.4", () => {
-    it("it should GET", done => {
+    it("it should GET details for kiel in 2017", done => {
       chai
         .request(server)
-        .get("/wahlkreisdetails/2017/10")
+        .get("/wahlkreisdetails/2017/Kiel")
         .end((err, res) => {
           res.should.have.status(200);
           res.body.should.be.a("array");
