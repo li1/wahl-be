@@ -295,13 +295,17 @@ export const umgewichtung =
 'order by \"Veränderung [in %]\" desc;'].join('\n');
 
 export const kg = 
-['with p (g, c) as (select geschlecht, count(*) from kandidaten group by geschlecht),',
+['with p (g, c) as (select coalesce(geschlecht, \'n\'), count(*) from kandidaten group by geschlecht),',
 '    pa (c) as (select sum(c) from p),',
 '    pm (c) as (select c from p where g = \'m\'),',
-'    pw (c) as (select c from p where g = \'w\')',
-'',
-'select round(pm.c * 1.0 / pa.c, 2)::real \"Männeranteil\", round(pw.c * 1.0 / pa.c, 2)::real \"Frauenanteil\"',
-'from pa, pm, pw;'].join('\n');
+'    pw (c) as (select c from p where g = \'w\'),',
+'    pn (c) as (select c from p where g = \'n\')',
+'    ',
+'select ',
+'  round(pm.c * 100.0 / pa.c, 0)::real \"Männeranteil\", ',
+'  round(pw.c * 100.0 / pa.c, 0)::real \"Frauenanteil\",',
+'  round(pn.c * 100.0 / pa.c, 0)::real \"Keine Angabe\"',
+'from pa, pm, pw, pn;'].join('\n');
 
 export const bg = 
 ['with p (g, c) as (select geschlecht, count(*) from bundestagsmitglieder group by geschlecht),',
@@ -309,12 +313,12 @@ export const bg =
 '    pm (c) as (select c from p where g = \'m\'),',
 '    pw (c) as (select c from p where g = \'w\')',
 '',
-'select round(pm.c * 1.0 / pa.c, 2)::real \"Männeranteil\", round(pw.c * 1.0 / pa.c, 2)::real \"Frauenanteil\"',
+'select round(pm.c * 100.0 / pa.c, 0)::real \"Männeranteil\", round(pw.c * 100.0 / pa.c, 0)::real \"Frauenanteil\"',
 'from pa, pm, pw;'].join('\n');
 
 export const kp = 
 ['with partei_mitglieder (partei, geschlecht, anz) as (',
-'    select p.name, k.geschlecht, count(*)',
+'    select p.name, coalesce(k.geschlecht, \'n\'), count(*)',
 '    from kandidaten k, parteien p',
 '    where p.id = k.parteiid',
 '    group by p.name, k.geschlecht',
@@ -335,14 +339,21 @@ export const kp =
 '      select pm.partei, sum(pm.anz) from partei_mitglieder pm',
 '      where pm.geschlecht = \'w\'',
 '      group by pm.partei, pm.geschlecht',
+'  ),',
+'  ',
+'    partei_n (partei, anz) as (',
+'      select pm.partei, sum(pm.anz) from partei_mitglieder pm',
+'      where pm.geschlecht = \'n\'',
+'      group by pm.partei, pm.geschlecht',
 '  )',
 '',
 'select',
 '  ps.partei,',
-'  round(pmm.anz * 1.0 / ps.anz, 2)::real \"Männeranteil\",',
-'  round(pmw.anz * 1.0 / ps.anz, 2)::real \"Frauenanteil\"',
-'from partei_sum ps, partei_m pmm, partei_w pmw',
-'where ps.partei = pmm.partei and pmm.partei = pmw.partei;'].join('\n');
+'  round(pmm.anz * 100.0 / ps.anz, 2)::real \"Männeranteil\",',
+'  round(pmw.anz * 100.0 / ps.anz, 2)::real \"Frauenanteil\",',
+'  round(pmn.anz * 100.0 / ps.anz, 2)::real \"Keine Angabe\"',
+'from partei_sum ps, partei_m pmm, partei_w pmw, partei_n pmn',
+'where ps.partei = pmm.partei and pmm.partei = pmw.partei and pmn.partei = ps.partei;'].join('\n');
 
 export const bp =
 ['with partei_mitglieder (partei, geschlecht, anz) as (',
@@ -370,8 +381,8 @@ export const bp =
 '',
 'select',
 '  ps.partei,',
-'  round(pmm.anz * 1.0 / ps.anz, 2)::real \"Männeranteil\",',
-'  round(pmw.anz * 1.0 / ps.anz, 2)::real \"Frauenanteil\"',
+'  round(pmm.anz * 100.0 / ps.anz, 2)::real \"Männeranteil\",',
+'  round(pmw.anz * 100.0 / ps.anz, 2)::real \"Frauenanteil\"',
 'from partei_sum ps, partei_m pmm, partei_w pmw',
 'where ps.partei = pmm.partei and pmm.partei = pmw.partei;'].join('\n');
 
