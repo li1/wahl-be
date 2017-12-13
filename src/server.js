@@ -17,6 +17,11 @@ app.use(function(req, res, next) {
   next();
 });
 
+const bodyParser = require('body-parser');
+
+app.use(bodyParser.json())
+app.use(bodyParser.urlencoded({extended: true}))
+
 
 //Q1
 app.get("/sitzverteilung", async (req, res) => {
@@ -112,8 +117,6 @@ app.get("/votingcode/:code", async(req, res) => {
           //code exists in the database
           result = '{ "status" : "OK", "WahlkreisID" :' +  rows[0]["wahlkreisid"] + '}';
       }
-
-
       res.send(result);
 
   });
@@ -128,6 +131,26 @@ app.get("/wahlkreisparteien/:wahlkreisid", async (req, res) => {
     res.send(rows);
 })
 
+app.post("/vote",  async (request, response) => {
+    const { rows } = await  dbConnector.query(queries.votingcode_wahlkreisid(request.body.code));
+    if (rows.length > 0) {
+        //code exists in the database -> TODO: we should lock this code here
+        //validate if votes are ok
+        if (request.body.ErststimmenAuswahl.length === 1) {
+            console.log(request.body);
+            console.log("erstimme gueltig" )
+           await  dbConnector.query(queries.erstimmen_vote(request.body.ErststimmenAuswahl[0]));
+        }
+        if (request.body.ZweitstimmenAuswahl.length === 1) {
+            console.log("zweitstimme gültig")
+        }
+       //const { rows } = await  dbConnector.query(queries.votingcode_wahlkreisid(request.body.code));
+    }
+    let result = '{ "status" : "OK"}';
+    response.send(result);
+    console.log(result)
+    //response.send(request.body);
+});
 
 
 app.listen(3000, () => {

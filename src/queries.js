@@ -472,7 +472,7 @@ export const bundestagAlterQuote =
 
 
 export const wahlkreiskandidaten = (wahlkreisid) => (
-    ['   select COALESCE(k.titel || \' \', \'\') || k.nachname || \', \' || k.vorname as Name, k.beruf, k.geburtsjahr, p.name Partei',
+    ['   select COALESCE(k.titel || \' \', \'\') || k.nachname || \', \' || k.vorname as Name, k.beruf, k.geburtsjahr, p.name Partei, k.id Kandidatid',
         '   from direktkandidaten dk, kandidaten k, parteien p',
         'where dk.kandidatid = k.id',
         'and dk.legislaturperiodeid=2017',
@@ -492,7 +492,9 @@ export const votingcode_wahlkreisid = (votingcode) => (
         'where code = \''  +  votingcode + '\''].join('\n'));
 
 
-
+export const erstimmen_vote = (kandidatid) => (
+    ['Insert into erststimmestimmzettel values (' + kandidatid + ')'
+    ].join('\n'));
 
 
 
