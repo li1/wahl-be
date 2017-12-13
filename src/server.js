@@ -121,9 +121,9 @@ app.get("/quote/:type", async (req, res) => {
 app.get("/age/:type", async (req, res) => {
   let query = "";
   if (req.params.type === "akp") {
-    query = queries.kp
+    query = queries.akp
   } else {
-    query = queries.bp
+    query = queries.abp
   }
 
   const { rows } = await dbConnector.query(query);

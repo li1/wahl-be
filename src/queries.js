@@ -144,7 +144,7 @@ export const wahlkreisuebersicht = jahr => (
 '  where w.name = wsp.wahlkreis',
 '        and w.bundeslandid = b.id;'].join('\n'));
 
-const wahlkreisFilter = wahlkreis => ("w.id = " + wahlkreis + " and");
+const wahlkreisFilter = wahlkreis => ("w.name = \'" + wahlkreis + "\' and");
 export const wahlkreisdetails = (jahr, wahlkreis) => (
 ['  with wahlkreisparteiergebnisse (legislaturperiodeid, wahlkreisname, direktkandidat, anzerststimmen, anteilerst, anzzweitstimmen, anteilzweit, parteiid) as',
 '',
@@ -295,20 +295,22 @@ export const umgewichtung =
 'order by \"Veränderung [in %]\" desc;'].join('\n');
 
 export const kg = 
-['with pmac (c) as (select count(*) from kandidaten),',
-'    pmmc (c) as (select count(*) from kandidaten where geschlecht = \'m\'),',
-'    pmwc (c) as (select count(*) from kandidaten where geschlecht = \'w\')',
+['with p (g, c) as (select geschlecht, count(*) from kandidaten group by geschlecht),',
+'    pa (c) as (select sum(c) from p),',
+'    pm (c) as (select c from p where g = \'m\'),',
+'    pw (c) as (select c from p where g = \'w\')',
 '',
-'select round(pmmc.c * 1.0 / pmac.c, 2) \"Männeranteil\", round(pmwc.c * 1.0 / pmac.c, 2) \"Frauenanteil\"',
-'from pmmc, pmwc, pmac;'].join('\n');
+'select round(pm.c * 1.0 / pa.c, 2)::real \"Männeranteil\", round(pw.c * 1.0 / pa.c, 2)::real \"Frauenanteil\"',
+'from pa, pm, pw;'].join('\n');
 
 export const bg = 
-['with pmac (c) as (select count(*) from bundestagsmitglieder),',
-'    pmmc (c) as (select count(*) from bundestagsmitglieder where geschlecht = \'m\'),',
-'    pmwc (c) as (select count(*) from bundestagsmitglieder where geschlecht = \'w\')',
+['with p (g, c) as (select geschlecht, count(*) from bundestagsmitglieder group by geschlecht),',
+'    pa (c) as (select sum(c) from p),',
+'    pm (c) as (select c from p where g = \'m\'),',
+'    pw (c) as (select c from p where g = \'w\')',
 '',
-'select round(pmmc.c * 1.0 / pmac.c, 2) \"Männeranteil\", round(pmwc.c * 1.0 / pmac.c, 2) \"Frauenanteil\"',
-'from pmmc, pmwc, pmac;'].join('\n');
+'select round(pm.c * 1.0 / pa.c, 2)::real \"Männeranteil\", round(pw.c * 1.0 / pa.c, 2)::real \"Frauenanteil\"',
+'from pa, pm, pw;'].join('\n');
 
 export const kp = 
 ['with partei_mitglieder (partei, geschlecht, anz) as (',
