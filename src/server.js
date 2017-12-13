@@ -35,6 +35,29 @@ app.get("/bundestagsmitglieder", async (req, res) => {
   res.send(rows);
 })
 
+//Eigenes Add-On: (Zweit)sieger nach Bundesland
+//typ: "erst" || "zweit"
+//platz: "sieger" || "zweiter"
+app.get("/bundeslanderg/:typ/:platz", async (req, res) => {
+  let query = "";
+  if(req.params.typ === "erst") {
+    if(req.params.platz === "sieger") {
+      query = queries.erstSieger;
+    } else {
+      query = queries.erstFollower;
+    }
+  } else {
+    if(req.params.platz === "sieger") {
+      query = queries.zweitSieger;
+    } else {
+      query = queries.zweitFollower;
+    }
+  }
+  
+  const { rows } = await dbConnector.query(query);
+  res.send(rows);
+});
+
 //Q3.1, Q3.2, Q4 
 app.get("/wahlkreisuebersicht/:jahr", async (req, res) => {
   const { rows } = await dbConnector.query(queries.wahlkreisuebersicht(req.params.jahr));
@@ -59,36 +82,6 @@ app.get("/knappste", async (req, res) => {
   res.send(rows);
 })
 
-//Abfrage Frauen- & Männerquote - Bundestag gesamt
-app.get("/bundestagQuote", async (req, res) => {
-  const { rows } = await dbConnector.query(queries.bundestagQuote);
-  res.send(rows);
-})
-
-//Abfrage Frauen- & Männerquote - Bundestag Parteiebene
-app.get("/bundestagParteienQuote", async (req, res) => {
-  const { rows } = await dbConnector.query(queries.bundestagParteienQuote);
-  res.send(rows);
-})
-
-//Abfrage Altersstufen - Bundestag gesamt
-app.get("/bundestagAlter", async (req, res) => {
-  const { rows } = await dbConnector.query(queries.bundestagAlter);
-  res.send(rows);
-})
-
-//Abfrage Altersstufen - Bundestag Parteiebene
-app.get("/bundestagParteienAlter", async (req, res) => {
-  const { rows } = await dbConnector.query(queries.bundestagParteienAlter);
-  res.send(rows);
-})
-
-//Abfrage Frauen- & Männerquote nach Altersstufen - Bundestag gesamt
-app.get("/bundestagAlterQuote", async (req, res) => {
-  const { rows } = await dbConnector.query(queries.bundestagAlterQuote);
-  res.send(rows);
-})
-
 //Eigene Abfrage
 app.get("/umgewichtung", async (req, res) => {
   const { rows } = await dbConnector.query(queries.umgewichtung);
@@ -101,25 +94,52 @@ app.get("/umgewichtungPlot", async (req, res) => {
   res.send(rows);
 })
 
-//Add-On: (Zweit)sieger nach Bundesland
-//typ: "erst" || "zweit"
-//platz: "sieger" || "zweiter"
-app.get("/bundeslanderg/:typ/:platz", async (req, res) => {
-  const { rows } = await dbConnector.query(queries.bundeslanderg(req.params.typ, req.params.platz));
+//Team-Aufgaben
+//Frauen- & Männerquote - Kandidaten gesamt (/kg)
+//Frauen- & Männerquote - Bundestag gesamt (/bg)
+//Frauen- & Männerquote - Kandidaten Parteien (/kp)
+//Frauen- & Männerquote - Bundestag Parteien (/bp)
+app.get("/quote/:type", async (req, res) => {
+  let query = "";
+  if (req.params.type === "kg") {
+    query = queries.kg
+  } else if (req.params.type === "bg") {
+    query = queries.bg
+  } else if (req.params.type === "kp") {
+    query = queries.kp
+  } else {
+    query = queries.bp
+  }
+
+  const { rows } = await dbConnector.query(query);
   res.send(rows);
-});
+})
 
+//Teamaufgaben
+//Altersverteilung - Kandidaten Parteien (/akp)
+//Altersverteilung - Bundestag Parteien (/abp)
+app.get("/age/:type", async (req, res) => {
+  let query = "";
+  if (req.params.type === "akp") {
+    query = queries.kp
+  } else {
+    query = queries.bp
+  }
+
+  const { rows } = await dbConnector.query(query);
+  res.send(rows);
+})
+
+//Wählen
 app.get("/votingcode/:code", async(req, res) => {
-
-      const { rows } = await dbConnector.query(queries.votingcode_wahlkreisid(req.params.code));
-      let result = '{ "status" : "Not Ok", "WahlkreisID" : null }';
-      if (rows.length > 0) {
-          //code exists in the database
-          result = '{ "status" : "OK", "WahlkreisID" :' +  rows[0]["wahlkreisid"] + '}';
-      }
-      res.send(result);
-
-  });
+  const { rows } = await dbConnector.query(queries.votingcode_wahlkreisid(req.params.code));
+  let result = '{ "status" : "Not Ok", "WahlkreisID" : null }';
+  if (rows.length > 0) {
+    //code exists in the database
+    result = '{ "status" : "OK", "WahlkreisID" :' +  rows[0]["wahlkreisid"] + '}';
+  }
+  res.send(result);
+});
 
 app.get("/wahlkreisdirektkandidaten/:wahlkreisid", async (req, res) => {
     const { rows } = await dbConnector.query(queries.wahlkreiskandidaten(req.params.wahlkreisid));
@@ -132,29 +152,29 @@ app.get("/wahlkreisparteien/:wahlkreisid", async (req, res) => {
 })
 
 app.post("/vote",  async (request, response) => {
-    const { rows } = await  dbConnector.query(queries.votingcode_wahlkreisid(request.body.code));
-    let wahlkreisid = rows[0]["wahlkreisid"];
-    let result = '{ "status" : "Not OK"}';
-    if (rows.length > 0) {
-        //code exists in the database -> TODO: we should lock this code here
-        //validate if votes are ok
-        if (request.body.ErststimmenAuswahl.length === 1) {
-            console.log(request.body);
-            console.log("erstimme gueltig" )
-           await  dbConnector.query(queries.erstimmen_vote(request.body.ErststimmenAuswahl[0]));
-        } else {
-            await  dbConnector.query(queries.erstimmen_vote_ungueltig(wahlkreisid));
-        }
-        if (request.body.ZweitstimmenAuswahl.length === 1) {
-            console.log(queries.zweitstimmen_vote(request.body.ZweitstimmenAuswahl[0], wahlkreisid));
-            await  dbConnector.query(queries.zweitstimmen_vote(request.body.ZweitstimmenAuswahl[0], wahlkreisid));
-        } else {
-            await  dbConnector.query(queries.zweitstimmen_vote_ungueltig(wahlkreisid));
-        }
-        //TODO: Delete code from database -> request.body.code
-        result = '{ "status" : "OK"}';
+  const { rows } = await  dbConnector.query(queries.votingcode_wahlkreisid(request.body.code));
+  let wahlkreisid = rows[0]["wahlkreisid"];
+  let result = '{ "status" : "Not OK"}';
+  if (rows.length > 0) {
+    //code exists in the database -> TODO: we should lock this code here
+    //validate if votes are ok
+    if (request.body.ErststimmenAuswahl.length === 1) {
+        console.log(request.body);
+        console.log("erstimme gueltig" )
+       await  dbConnector.query(queries.erstimmen_vote(request.body.ErststimmenAuswahl[0]));
+    } else {
+        await  dbConnector.query(queries.erstimmen_vote_ungueltig(wahlkreisid));
     }
-    response.send(result);
+    if (request.body.ZweitstimmenAuswahl.length === 1) {
+        console.log(queries.zweitstimmen_vote(request.body.ZweitstimmenAuswahl[0], wahlkreisid));
+        await  dbConnector.query(queries.zweitstimmen_vote(request.body.ZweitstimmenAuswahl[0], wahlkreisid));
+    } else {
+        await  dbConnector.query(queries.zweitstimmen_vote_ungueltig(wahlkreisid));
+    }
+    //TODO: Delete code from database -> request.body.code
+    result = '{ "status" : "OK"}';
+  }
+  response.send(result);
 });
 
 
