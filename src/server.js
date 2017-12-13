@@ -133,6 +133,8 @@ app.get("/wahlkreisparteien/:wahlkreisid", async (req, res) => {
 
 app.post("/vote",  async (request, response) => {
     const { rows } = await  dbConnector.query(queries.votingcode_wahlkreisid(request.body.code));
+    let wahlkreisid = rows[0]["wahlkreisid"];
+    let result = '{ "status" : "Not OK"}';
     if (rows.length > 0) {
         //code exists in the database -> TODO: we should lock this code here
         //validate if votes are ok
@@ -140,16 +142,19 @@ app.post("/vote",  async (request, response) => {
             console.log(request.body);
             console.log("erstimme gueltig" )
            await  dbConnector.query(queries.erstimmen_vote(request.body.ErststimmenAuswahl[0]));
+        } else {
+            await  dbConnector.query(queries.erstimmen_vote_ungueltig(wahlkreisid));
         }
         if (request.body.ZweitstimmenAuswahl.length === 1) {
-            console.log("zweitstimme gültig")
+            console.log(queries.zweitstimmen_vote(request.body.ZweitstimmenAuswahl[0], wahlkreisid));
+            await  dbConnector.query(queries.zweitstimmen_vote(request.body.ZweitstimmenAuswahl[0], wahlkreisid));
+        } else {
+            await  dbConnector.query(queries.zweitstimmen_vote_ungueltig(wahlkreisid));
         }
-       //const { rows } = await  dbConnector.query(queries.votingcode_wahlkreisid(request.body.code));
+        //TODO: Delete code from database -> request.body.code
+        result = '{ "status" : "OK"}';
     }
-    let result = '{ "status" : "OK"}';
     response.send(result);
-    console.log(result)
-    //response.send(request.body);
 });
 
 

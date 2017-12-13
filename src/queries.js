@@ -496,5 +496,18 @@ export const erstimmen_vote = (kandidatid) => (
     ['Insert into erststimmestimmzettel values (' + kandidatid + ')'
     ].join('\n'));
 
+export const erstimmen_vote_ungueltig = (wahlkreisid) => (
+    ['Insert into erststimmestimmzettelungueltig values (' + wahlkreisid + ')'
+    ].join('\n'));
 
+export const zweitstimmen_vote = (partei, wahlkreisid) => (
+    ['insert into zweitstimmestimmzettel' ,
+    'select p.id, ' + wahlkreisid ,
+    'from parteien p ' ,
+    'where p.name = \'' + partei + '\''
+    ].join('\n'));
+
+export const zweitstimmen_vote_ungueltig = (wahlkreisid) => (
+    ['Insert into zweitstimmestimmzettelungueltig values (' + wahlkreisid + ')'
+    ].join('\n'));
 
