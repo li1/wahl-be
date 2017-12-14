@@ -568,3 +568,8 @@ export const zweitstimmen_vote_ungueltig = (wahlkreisid) => (
     ['Insert into zweitstimmestimmzettelungueltig values (' + wahlkreisid + ')'
     ].join('\n'));
 
+export const remove_votingcode  = (votingcode) => (
+    [
+        'DELETE FROM stimmabgabencodes',
+        'where code = \''  +  votingcode + '\''].join('\n'));
+
