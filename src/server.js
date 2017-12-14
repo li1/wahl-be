@@ -154,19 +154,17 @@ app.get("/wahlkreisparteien/:wahlkreisid", async (req, res) => {
 app.post("/vote",  async (request, response) => {
   const { rows } = await  dbConnector.query(queries.votingcode_wahlkreisid(request.body.code));
   let wahlkreisid = rows[0]["wahlkreisid"];
-  let result = '{ "status" : "Not OK"}';
+  let result = '{ "status" : "error"}';
+  console.log("starting vote (this may take a while)...");
   if (rows.length > 0) {
     //code exists in the database -> TODO: we should lock this code here
     //validate if votes are ok
     if (request.body.ErststimmenAuswahl.length === 1) {
-        console.log(request.body);
-        console.log("erstimme gueltig" )
        await  dbConnector.query(queries.erstimmen_vote(request.body.ErststimmenAuswahl[0]));
     } else {
         await  dbConnector.query(queries.erstimmen_vote_ungueltig(wahlkreisid));
     }
     if (request.body.ZweitstimmenAuswahl.length === 1) {
-        console.log(queries.zweitstimmen_vote(request.body.ZweitstimmenAuswahl[0], wahlkreisid));
         await  dbConnector.query(queries.zweitstimmen_vote(request.body.ZweitstimmenAuswahl[0], wahlkreisid));
     } else {
         await  dbConnector.query(queries.zweitstimmen_vote_ungueltig(wahlkreisid));
@@ -174,6 +172,7 @@ app.post("/vote",  async (request, response) => {
     //TODO: Delete code from database -> request.body.code
     result = '{ "status" : "OK"}';
   }
+  console.log("vote received.");
   response.send(result);
 });
 
