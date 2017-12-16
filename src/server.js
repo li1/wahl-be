@@ -64,9 +64,15 @@ app.get("/wahlkreisuebersicht/:jahr", async (req, res) => {
   res.send(rows);
 })
 
-//Q3.3, Q3.4 (Wahlkreis optional für Gesamtabfrage)
+//Q3.3, Q3.4 (auf Wahlkreisebene)
 app.get("/wahlkreisdetails/:jahr/:wahlkreis", async (req, res) => {
   const { rows } = await dbConnector.query(queries.wahlkreisdetails(req.params.jahr, req.params.wahlkreis));
+  res.send(rows);
+})
+
+//Q3.3, Q3.4 (auf Gesamtebene)
+app.get("/wahlkreisdetails/:jahr", async (req, res) => {
+  const { rows } = await dbConnector.query(queries.wahlkreisdetails(req.params.jahr, null));
   res.send(rows);
 })
 
