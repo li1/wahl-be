@@ -246,7 +246,7 @@ export const knappsteSiegerVerlierer =
 '  ), gewinnerUndVerlierer ( legislaturperiodeid, wahlkreis, kandidat, partei, \"abstand [in %]\", gewinner) as',
 '(select legislaturperiodeid, wahlkreis, kandidat, partei, abstand, false as gewinner  from knappsteVerlierer_10',
 ' union',
-' select legislaturperiodeid, wahlkreis, kandidat, partei, prozentualerVOrsprung, true as gewinner from GewinnerVorsprung',
+' select legislaturperiodeid, wahlkreis, kandidat, partei, prozentualerVOrsprung, true as gewinner from knappsteGewinner',
 ')',
 'select * from gewinnerUndVerlierer;'].join('\n');
 
@@ -349,11 +349,13 @@ export const kp =
 '',
 'select',
 '  ps.partei,',
-'  round(pmm.anz * 100.0 / ps.anz, 2)::real \"Männeranteil\",',
-'  round(pmw.anz * 100.0 / ps.anz, 2)::real \"Frauenanteil\",',
-'  round(pmn.anz * 100.0 / ps.anz, 2)::real \"Keine Angabe\"',
-'from partei_sum ps, partei_m pmm, partei_w pmw, partei_n pmn',
-'where ps.partei = pmm.partei and pmm.partei = pmw.partei and pmn.partei = ps.partei;'].join('\n');
+'  coalesce(round(pmm.anz * 100.0 / ps.anz, 2), 0)::real \"Männeranteil\",',
+'  coalesce(round(pmw.anz * 100.0 / ps.anz, 2), 0)::real \"Frauenanteil\",',
+'  coalesce(round(pmn.anz * 100.0 / ps.anz, 2), 0)::real \"Keine Angabe\"',
+'from partei_sum ps',
+'  full outer join partei_m pmm on ps.partei = pmm.partei ',
+'  full outer join partei_w pmw on ps.partei = pmw.partei',
+'  full outer join partei_n pmn on ps.partei = pmn.partei;'].join('\n');
 
 export const bp =
 ['with partei_mitglieder (partei, geschlecht, anz) as (',

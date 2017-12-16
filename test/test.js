@@ -107,14 +107,14 @@ describe("Queries", () => {
   });
 
   describe("Q3.3, Q3.4", () => {
-    it("it should GET", done => {
+    it("it should GET details for Kiel in 2017", done => {
       chai
         .request(server)
-        .get("/wahlkreisdetails/2017/10")
+        .get("/wahlkreisdetails/2017/Kiel")
         .end((err, res) => {
           res.should.have.status(200);
           res.body.should.be.a("array");
-          res.body.length.should.be.eq(7);
+          res.body.length.should.be.eq(8);
           done();
         });
     });
@@ -142,7 +142,7 @@ describe("Queries", () => {
         .end((err, res) => {
           res.should.have.status(200);
           res.body.should.be.a("array");
-          res.body.length.should.be.eq(430);
+          res.body.length.should.be.below(200);
           done();
         });
     });
@@ -163,14 +163,14 @@ describe("Queries", () => {
   });
 
   describe("umgewichtung", () => {
-    it("it should GET the umgewichtung", done => {
+    it("it should GET the umgewichtung with respect to parties such as die violetten", done => {
       chai
         .request(server)
         .get("/umgewichtung")
         .end((err, res) => {
           res.should.have.status(200);
           res.body.should.be.a("array");
-          res.body.length.should.be.eq(43);
+          res.body.length.should.be.eq(34); //there really are parties that don't compete in zweitstimmen, e.g. die violetten
           done();
         });
     });
