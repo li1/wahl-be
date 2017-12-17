@@ -183,6 +183,17 @@ app.post("/vote",  async (request, response) => {
   response.send(result);
 });
 
+//Einzelstimmenaggregation
+app.get("/aggregate", async (req, res) => {
+  console.log("starting aggregation...")
+  await dbConnector.query(queries.einzelstimmenaggregation1);
+  await dbConnector.query(queries.einzelstimmenaggregation2);
+  await dbConnector.query(queries.einzelstimmenaggregation3);
+  const { rows } = await dbConnector.query(queries.einzelstimmenaggregation4);
+  console.log("finished aggregation.")
+  res.send(rows);
+})
+
 
 app.listen(3000, () => {
   console.log("App listening on port 3000!");

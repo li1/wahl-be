@@ -575,3 +575,7 @@ export const remove_votingcode  = (votingcode) => (
         'DELETE FROM stimmabgabencodes',
         'where code = \''  +  votingcode + '\''].join('\n'));
 
+export const einzelstimmenaggregation1 = "refresh materialized view Kandidatenergebnisse;";
+export const einzelstimmenaggregation2 = "refresh materialized view ParteienWahlkreiseergebnisse;";
+export const einzelstimmenaggregation3 = "refresh materialized view UngueltigeErststimmen;";
+export const einzelstimmenaggregation4 = "refresh materialized view UngueltigeZweitstimmen;";
