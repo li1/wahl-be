@@ -16,7 +16,7 @@ export const bundestagsmitglieder =
 '          and a.parteiid = p.id',
 '          and k.id = a.kandidatid',
 ')',
-'select partei, b.name as Bundesland, direktkandidat as Direktkandidatur, listenplatz, vorname, nachname, geschlecht, geburtsjahr',
+'select partei, b.name as Bundesland, direktkandidat as Direktkandidatur, listenplatz::real, vorname, nachname, geschlecht, geburtsjahr::real',
 'from bundestagsmitglieder bm, bundeslaender b',
 'where bm.bundesland = b.id;'].join('\n');
 
@@ -115,7 +115,7 @@ export const wahlkreisuebersicht = jahr => (
 '      wahlkreisuebersicht_sieger_partei (Wahlkreis, \"Wahlbeteiligung [in %]\", \"Direktkandidat-Sieger\", \"Direktkandidat-Partei\", \"Siegerpartei\") as (',
 '        Select',
 '          w.name,',
-'          wue.wahlbeteiligung,',
+'          wue.wahlbeteiligung::real,',
 '          k.nachname || \', \' || k.vorname,',
 '          p2.name,',
 '          p.name',
@@ -166,20 +166,20 @@ wahlkreis && wahlkreisFilter(wahlkreis),
 '         wz.legislaturperiodeid = 2013),',
 '',
 '      wahlkreisparteiergebnisse_vorperiodevergleich(wahlkreis, direktkandidat, Erststimmen, \"Erststimmenanteil [in %]\", Partei, Zweitstimmen, \"Zweitstimmenanteil [in %]\", \"Vorjahresvergleich [in %]\") as',
-'    ( select w1.wahlkreisname, w1.direktkandidat, w1.anzerststimmen, w1.anteilerst,',
-'        w1.parteiid, w1.anzzweitstimmen, w1.anteilzweit,',
-'        CASE WHEN w1.legislaturperiodeid = 2013 THEN \'n.a.\'',
-'        ELSE \'\' || w1.anteilzweit - w2.anteilzweit END',
+'    ( select w1.wahlkreisname, w1.direktkandidat, w1.anzerststimmen::real, w1.anteilerst::real,',
+'        w1.parteiid, w1.anzzweitstimmen::real, w1.anteilzweit::real,',
+'        CASE WHEN w1.legislaturperiodeid = 2013 THEN 0',
+'        ELSE w1.anteilzweit - w2.anteilzweit END::real',
 '      from wahlkreisparteiergebnisse w1 left outer join wahlkreisparteiergebnisse w2',
 '          on w1.parteiid = w2.parteiid and w1.legislaturperiodeid <> w2.legislaturperiodeid and',
 '             w1.wahlkreisname = w2.wahlkreisname',
-'      where w1.legislaturperiodeid = 2017',
+'      where w1.legislaturperiodeid = ' + jahr,
 '    )',
 '  select * from wahlkreisparteiergebnisse_vorperiodevergleich;'].join('\n'));
 
 export const ueberhangmandate = jahr => (
 ['  select bl.name Bundesland, p.name Partei,',
-'         CASE WHEN  ble.Direktmandate < pzm.Mandate THEN 0 ELSE ble.Direktmandate - pzm.Mandate END AS \"Überhangmandate\"',
+'         CASE WHEN  ble.Direktmandate < pzm.Mandate THEN 0 ELSE ble.Direktmandate - pzm.Mandate END::real AS \"Überhangmandate\"',
 '  from Bundeslaenderergebnisse ble, ParteienZweitstimmenmandate pzm, Parteien p, Bundeslaender bl',
 '  where ble.legislaturperiodeid = pzm.legislaturperiodeid and',
 '        ble.parteiid = pzm.parteiid and',
@@ -244,19 +244,19 @@ export const knappsteSiegerVerlierer =
 '     AS ROW_ID FROM knappsteVerlierer) A',
 '   WHERE ROW_ID < 11',
 '  ), gewinnerUndVerlierer ( legislaturperiodeid, wahlkreis, kandidat, partei, \"abstand [in %]\", gewinner) as',
-'(select legislaturperiodeid, wahlkreis, kandidat, partei, abstand, false as gewinner  from knappsteVerlierer_10',
+'(select legislaturperiodeid::real, wahlkreis, kandidat, partei, abstand::real, false as gewinner  from knappsteVerlierer_10',
 ' union',
-' select legislaturperiodeid, wahlkreis, kandidat, partei, prozentualerVOrsprung, true as gewinner from knappsteGewinner',
+' select legislaturperiodeid::real, wahlkreis, kandidat, partei, prozentualerVOrsprung::real, true as gewinner from knappsteGewinner',
 ')',
 'select * from gewinnerUndVerlierer;'].join('\n');
 
 export const umgewichtungPlot = 
 ['with wahlkreis_falschwaehleranteil (wahlkreisid, falschwaehleranteil) as (',
-'    select wahlkreisid, (ungueltigezweitstimmen * 1.0 / waehler)',
+'    select wahlkreisid, (ungueltigezweitstimmen * 1.0 / waehler)::real',
 '    from wahlkreisergebnisse',
 '    where legislaturperiodeid = 2017)',
 '',
-'select p.name, wf.*, wze.anteil from wahlkreis_falschwaehleranteil wf, wahlkreiszweitstimmenergebnisse wze, parteien p',
+'select p.name, wf.*, wze.anteil::real from wahlkreis_falschwaehleranteil wf, wahlkreiszweitstimmenergebnisse wze, parteien p',
 'where wze.legislaturperiodeid = 2017 and',
 '      wze.wahlkreisid = wf.wahlkreisid and',
 '      wze.parteiid = p.id',
@@ -288,7 +288,7 @@ export const umgewichtung =
 '      group by parteiid',
 '  )',
 '',
-'select p.name, rs.anteil \"Regulärer Zweitstimmenanteil [in %]\", gs.anteil \"Gewichteter Zweitstimmenanteil [in %]\", gs.anteil - rs.anteil \"Veränderung [in %]\"',
+'select p.name, rs.anteil::real \"Regulärer Zweitstimmenanteil [in %]\", gs.anteil::real \"Gewichteter Zweitstimmenanteil [in %]\", gs.anteil - rs.anteil::real \"Veränderung [in %]\"',
 'from gewichtetes_summenergebnis gs, regulaeres_summenergebnis rs, parteien p',
 'where gs.parteiid = rs.parteiid',
 '      and p.id = gs.parteiid',
@@ -527,7 +527,7 @@ export const abp =
 
 
 export const wahlkreiskandidaten = (wahlkreisid) => (
-['  select COALESCE(k.titel || \' \', \'\') || k.nachname || \', \' || k.vorname as Name, k.beruf, k.geburtsjahr, p.name Partei, k.id Kandidatid',
+['  select COALESCE(k.titel || \' \', \'\') || k.nachname || \', \' || k.vorname as Name, k.beruf, k.geburtsjahr::real, p.name Partei, k.id::real Kandidatid',
 '  from direktkandidaten dk, kandidaten k, parteien p',
 '  where dk.kandidatid = k.id',
 '        and dk.legislaturperiodeid = 2017',
@@ -547,7 +547,7 @@ export const wahlkreisparteien = (wahlkreisid) => (
 
 export const votingcode_wahlkreisid = (votingcode) => (
     [
-        'select wahlkreisid from stimmabgabencodes',
+        'select wahlkreisid::real from stimmabgabencodes',
         'where code = \''  +  votingcode + '\''].join('\n'));
 
 
