@@ -175,7 +175,9 @@ wahlkreis && wahlkreisFilter(wahlkreis),
 '             w1.wahlkreisname = w2.wahlkreisname',
 '      where w1.legislaturperiodeid = ' + jahr,
 '    )',
-'  select * from wahlkreisparteiergebnisse_vorperiodevergleich;'].join('\n'));
+'  select * from wahlkreisparteiergebnisse_vorperiodevergleich',
+    wahlkreis && 'where wahlkreis = \'' + wahlkreis + '\'',
+    ';'].join('\n'));
 
 export const ueberhangmandate = jahr => (
 ['  select bl.name Bundesland, p.name Partei,',
